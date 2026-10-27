@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(open /Users/manson/Documents/project/my-first-project/vizitka.html)",
+      "Bash(open vizitka.html)",
+      "Bash(git config *)",
+      "Bash(git add *)",
+      "Bash(git commit -m 'Initial commit: interactive Tron-style business card *)"
+    ]
+  }
+}

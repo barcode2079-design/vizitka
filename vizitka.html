@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0a0a0a">
+<title>Голенко Андрей — AI-автоматизация бизнеса</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --cyan: #00e5ff;
+    --cyan-dim: rgba(0,229,255,.35);
+    --orange: #ff7a1a;
+    --text: #e6fbff;
+    --muted: #8fb4bd;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Orbitron", "Eurostile", "Bank Gothic", "Segoe UI", -apple-system, Roboto, Helvetica, Arial, sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px 16px;
+    overflow-x: hidden;
+  }
+
+  #grid { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; }
+
+  /* сканлайны + виньетка */
+  .scan {
+    position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background:
+      repeating-linear-gradient(to bottom, rgba(0,229,255,.035) 0 1px, transparent 1px 3px),
+      radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.65) 100%);
+  }
+
+  .card {
+    position: relative; z-index: 2;
+    width: 100%; max-width: 580px;
+    padding: 44px 34px 36px;
+    text-align: center;
+    background: rgba(4,12,16,.74);
+    border: 1px solid var(--cyan-dim);
+    clip-path: polygon(0 18px, 18px 0, calc(100% - 18px) 0, 100% 18px, 100% calc(100% - 18px), calc(100% - 18px) 100%, 18px 100%, 0 calc(100% - 18px));
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: inset 0 0 40px rgba(0,229,255,.08);
+    opacity: 0;
+    animation: boot 1s steps(1, end) .1s forwards, boot2 1s ease-out .1s forwards;
+  }
+  /* неоновая рамка по углам */
+  .card::before, .card::after {
+    content: ""; position: absolute; width: 38px; height: 38px;
+    border: 2px solid var(--cyan);
+    filter: drop-shadow(0 0 6px var(--cyan));
+    pointer-events: none;
+  }
+  .card::before { top: 8px; left: 8px; border-right: 0; border-bottom: 0; }
+  .card::after  { bottom: 8px; right: 8px; border-left: 0; border-top: 0; }
+  @keyframes boot  { 0%{opacity:0} 10%{opacity:1} 20%{opacity:.2} 30%{opacity:1} 40%{opacity:.4} 55%,100%{opacity:1} }
+  @keyframes boot2 { from { transform: scaleY(.96); } to { transform: scaleY(1); } }
+
+  .status {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: .7rem; letter-spacing: .3em; text-transform: uppercase;
+    color: var(--cyan);
+    margin-bottom: 22px;
+  }
+  .status i {
+    width: 8px; height: 8px; background: var(--orange);
+    box-shadow: 0 0 10px var(--orange);
+    animation: blink 1.4s infinite;
+  }
+  @keyframes blink { 50% { opacity: .15; } }
+
+  h1 {
+    font-size: clamp(2rem, 8.4vw, 3.4rem);
+    line-height: 1.08;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #eaffff;
+    text-shadow:
+      0 0 6px #fff,
+      0 0 14px var(--cyan),
+      0 0 32px var(--cyan),
+      0 0 64px rgba(0,229,255,.6);
+    animation: flicker 6s infinite;
+    overflow-wrap: anywhere;
+  }
+  @keyframes flicker {
+    0%,18%,22%,62%,64%,100% { opacity: 1; }
+    20%,63% { opacity: .55; }
+  }
+
+  .role {
+    margin-top: 16px;
+    font-size: .85rem; letter-spacing: .28em; text-transform: uppercase;
+    color: var(--orange);
+    text-shadow: 0 0 10px rgba(255,122,26,.7);
+  }
+  .rule {
+    height: 2px; margin: 24px auto 0; width: 70%;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+    box-shadow: 0 0 12px var(--cyan);
+  }
+
+  .about {
+    margin: 22px auto 0; max-width: 470px;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--muted); font-size: 1rem; line-height: 1.65;
+  }
+
+  .tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 24px; }
+  .tag {
+    padding: 8px 13px;
+    font-size: .7rem; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--cyan);
+    border: 1px solid var(--cyan-dim);
+    background: rgba(0,229,255,.05);
+    transition: .25s; cursor: default;
+  }
+  .tag:hover {
+    color: #001417; background: var(--cyan);
+    box-shadow: 0 0 18px var(--cyan);
+    transform: translateY(-2px);
+  }
+
+  .cta {
+    position: relative; overflow: hidden;
+    display: inline-flex; align-items: center; justify-content: center; gap: 12px;
+    margin-top: 34px; padding: 17px 40px;
+    font: inherit; font-size: 1rem; font-weight: 700;
+    letter-spacing: .2em; text-transform: uppercase;
+    color: var(--orange); text-decoration: none;
+    background: rgba(255,122,26,.08);
+    border: 2px solid var(--orange);
+    clip-path: polygon(0 10px, 10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
+    box-shadow: 0 0 18px rgba(255,122,26,.45), inset 0 0 18px rgba(255,122,26,.2);
+    animation: glowpulse 2s ease-in-out infinite;
+    transition: color .25s, background .25s, transform .25s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cta::after {
+    content: ""; position: absolute; top: 0; left: -70%; width: 40%; height: 100%;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,.55), transparent);
+    transform: skewX(-20deg);
+    animation: sweep 3s ease-in-out infinite;
+  }
+  @keyframes sweep { 55%, 100% { left: 140%; } }
+  @keyframes glowpulse {
+    50% { box-shadow: 0 0 34px rgba(255,122,26,.85), inset 0 0 26px rgba(255,122,26,.35); }
+  }
+  .cta:hover { background: var(--orange); color: #1a0a00; transform: translateY(-3px); }
+  .cta:active { transform: scale(.97); }
+  .cta svg { width: 20px; height: 20px; fill: currentColor; transition: transform .3s; }
+  .cta:hover svg { transform: translateX(5px); }
+
+  .socials { display: flex; justify-content: center; gap: 14px; margin-top: 30px; }
+  .social {
+    width: 54px; height: 54px; display: grid; place-items: center;
+    color: var(--cyan); background: rgba(0,229,255,.05);
+    border: 1px solid var(--cyan-dim);
+    clip-path: polygon(0 8px, 8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+    cursor: pointer; text-decoration: none;
+    transition: transform .25s, color .25s, background .25s, box-shadow .25s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .social svg { width: 24px; height: 24px; fill: currentColor; }
+  .social:hover, .social:focus-visible {
+    transform: translateY(-6px);
+    color: #001417; background: var(--cyan);
+    box-shadow: 0 0 26px var(--cyan);
+    outline: none;
+  }
+  .social.sh:hover, .social.sh:focus-visible {
+    background: var(--orange); box-shadow: 0 0 26px var(--orange);
+  }
+
+  .handle {
+    margin-top: 22px; font-size: .8rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted);
+  }
+  .handle b { color: var(--cyan); font-weight: 700; text-shadow: 0 0 8px rgba(0,229,255,.7); }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 28px; z-index: 5;
+    transform: translate(-50%, 30px);
+    padding: 12px 22px; background: #031014; color: var(--cyan);
+    border: 1px solid var(--cyan); box-shadow: 0 0 20px rgba(0,229,255,.4);
+    font-size: .8rem; letter-spacing: .12em; text-transform: uppercase;
+    opacity: 0; pointer-events: none; transition: .35s;
+    max-width: calc(100vw - 32px);
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  @media (max-width: 480px) {
+    .card { padding: 38px 20px 30px; }
+    .cta { width: 100%; padding: 17px 20px; }
+    .tag { font-size: .65rem; padding: 7px 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    .card { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+  <canvas id="grid" aria-hidden="true"></canvas>
+  <div class="scan"></div>
+
+  <main class="card">
+    <div class="status"><i></i>Система онлайн</div>
+
+    <h1>Голенко Андрей</h1>
+    <p class="role">AI-автоматизация бизнеса</p>
+    <div class="rule"></div>
+
+    <p class="about">
+      Автоматизирую бизнес-процессы с помощью искусственного интеллекта:
+      от сайтов и приложений до цифровых сотрудников, которые работают за вас.
+    </p>
+
+    <div class="tags">
+      <span class="tag">Автоматизация бизнес-процессов</span>
+      <span class="tag">Сайты</span>
+      <span class="tag">Приложения</span>
+      <span class="tag">Mini App</span>
+      <span class="tag">Telegram-каналы на AI-агентах</span>
+      <span class="tag">Контент-завод для соцсетей</span>
+      <span class="tag">Цифровые сотрудники</span>
+    </div>
+
+    <a class="cta" href="https://t.me/ShacmanKrasnodar" target="_blank" rel="noopener">
+      Написать мне
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11h12.2l-5.6-5.6L12 4l8 8-8 8-1.400-1.400 5.600-5.600H4z"/></svg>
+    </a>
+
+    <div class="socials">
+      <a class="social tg" href="https://t.me/ShacmanKrasnodar" target="_blank" rel="noopener" aria-label="Telegram" title="Telegram">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.9 4.3 18.7 19.5c-.2 1.1-.9 1.4-1.8.9l-5-3.7-2.4 2.3c-.3.3-.5.5-1 .5l.4-5.1 9.3-8.4c.4-.4-.1-.6-.6-.2L6.1 12.8 1.2 11.3c-1.1-.3-1.1-1.1.2-1.6L20.500 2.300c.9-.3 1.700.2 1.400 2Z"/></svg>
+      </a>
+      <button class="social cp" id="copyBtn" type="button" aria-label="Скопировать ник" title="Скопировать ник">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1Zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Zm0 16H8V7h11v14Z"/></svg>
+      </button>
+      <button class="social sh" id="shareBtn" type="button" aria-label="Поделиться визиткой" title="Поделиться">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 16.1c-.8 0-1.500.3-2 .8l-7.100-4.200c.1-.2.1-.5.1-.7s0-.5-.1-.7l7-4.100c.5.5 1.200.8 2.100.8a3 3 0 1 0-3-3c0 .2 0 .5.1.7L8 9.800a3 3 0 1 0 0 4.400l7.100 4.200c-.1.2-.1.4-.1.6a2.900 2.900 0 1 0 3-2.900Z"/></svg>
+      </button>
+    </div>
+
+    <p class="handle">Telegram: <b>@ShacmanKrasnodar</b></p>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+  /* ---------- анимированный фон: сетка Трона + световые следы ---------- */
+  (function () {
+    const cv = document.getElementById('grid');
+    const ctx = cv.getContext('2d');
+    const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let w, h, dpr, hy, cx, gap;
+    const streaks = [];
+    const LANES = 9;
+
+    function resize() {
+      dpr = Math.min(devicePixelRatio || 1, 2);
+      w = innerWidth; h = innerHeight;
+      cv.width = w * dpr; cv.height = h * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      hy = h * 0.46;
+      cx = w / 2;
+      gap = Math.max(w, 700) / 9;
+      buildCity();
+      if (still) frame(0);
+    }
+
+    /* ----- город ----- */
+    let city = [], tower = null;
+    function rng(seed) {
+      return function () {
+        seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+        let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      };
+    }
+
+    function buildCity() {
+      const rand = rng(2077);
+      const scale = Math.min(Math.max(h / 800, 0.7), 1.4);
+      const layers = [
+        { a: 0.35, hMax: 0.16, wMin: 14, wMax: 34 },
+        { a: 1,    hMax: 0.26, wMin: 24, wMax: 62 }
+      ];
+      city = layers.map(L => {
+        const tiers = [];
+        let x = -20;
+        while (x < w + 20) {
+          const bw = (L.wMin + rand() * (L.wMax - L.wMin)) * scale;
+          const bh = h * L.hMax * (0.2 + 0.8 * Math.pow(rand(), 1.3));
+          const n = 1 + Math.floor(rand() * 3);
+          for (let i = 0; i < n; i++) {
+            const tw = bw * (1 - i * 0.28);
+            const th = bh * (1 - i * 0.22) ;
+            const tx = x + (bw - tw) / 2;
+            const wins = [];
+            const sp = 7 * scale;
+            for (let wy = hy - th + 6; wy < hy - 3; wy += sp) {
+              for (let wx = tx + 4; wx < tx + tw - 6; wx += sp * 1.3) {
+                if (rand() < 0.55) wins.push({
+                  x: wx, y: wy, ph: rand() * 6.28, sp: 0.4 + rand() * 1.6,
+                  o: rand() < 0.06
+                });
+              }
+            }
+            tiers.push({ x: tx, w: tw, h: th, wins, ant: i === n - 1 && rand() < 0.2 });
+          }
+          x += bw + rand() * 8;
+        }
+        return { a: L.a, tiers };
+      });
+      tower = { x: w * (w < 700 ? 0.82 : 0.8), h: h * 0.4, w: 34 * scale };
+    }
+
+    function drawCity(t) {
+      ctx.lineWidth = 1;
+      city.forEach(L => {
+        L.tiers.forEach(b => {
+          ctx.fillStyle = 'rgba(3,9,13,.92)';
+          ctx.fillRect(b.x, hy - b.h, b.w, b.h);
+          ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 9 * L.a;
+          ctx.strokeStyle = `rgba(0,229,255,${0.85 * L.a})`;
+          ctx.beginPath();
+          ctx.moveTo(b.x, hy); ctx.lineTo(b.x, hy - b.h);
+          ctx.lineTo(b.x + b.w, hy - b.h); ctx.lineTo(b.x + b.w, hy);
+          if (b.ant) { ctx.moveTo(b.x + b.w / 2, hy - b.h); ctx.lineTo(b.x + b.w / 2, hy - b.h - 22); }
+          ctx.stroke();
+        });
+        ctx.shadowBlur = 0;
+        L.tiers.forEach(b => {
+          b.wins.forEach(p => {
+            const on = Math.sin(t * p.sp + p.ph) > -0.35 ? 1 : 0.15;
+            ctx.fillStyle = p.o
+              ? `rgba(255,122,26,${0.9 * on * L.a})`
+              : `rgba(0,229,255,${0.65 * on * L.a})`;
+            ctx.fillRect(p.x, p.y, 4, 2);
+          });
+        });
+      });
+
+      // главная башня + вращающийся луч
+      const tx = tower.x, th = tower.h, tw = tower.w;
+      const top = hy - th;
+      ctx.fillStyle = 'rgba(3,9,13,.95)';
+      ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 14;
+      ctx.strokeStyle = 'rgba(160,250,255,.95)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(tx - tw, hy);
+      ctx.lineTo(tx - tw * 0.55, hy - th * 0.55);
+      ctx.lineTo(tx - tw * 0.2, hy - th * 0.8);
+      ctx.lineTo(tx - 2, top);
+      ctx.lineTo(tx + 2, top);
+      ctx.lineTo(tx + tw * 0.2, hy - th * 0.8);
+      ctx.lineTo(tx + tw * 0.55, hy - th * 0.55);
+      ctx.lineTo(tx + tw, hy);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = 'rgba(0,229,255,.5)';
+      ctx.lineWidth = 1;
+      for (let i = 1; i < 6; i++) {
+        const yy = hy - th * i * 0.15;
+        const half = tw * (1 - i * 0.14);
+        ctx.beginPath(); ctx.moveTo(tx - half, yy); ctx.lineTo(tx + half, yy); ctx.stroke();
+      }
+
+      const pulse = 0.6 + 0.4 * Math.sin(t * 3);
+      ctx.fillStyle = `rgba(255,122,26,${pulse})`;
+      ctx.shadowColor = '#ff7a1a'; ctx.shadowBlur = 16;
+      ctx.beginPath(); ctx.arc(tx, top, 3, 0, 6.283); ctx.fill();
+      ctx.shadowBlur = 0;
+
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.translate(tx, top);
+      ctx.rotate(-Math.PI / 2 + Math.sin(t * 0.45) * 0.9);
+      const len = Math.max(w, h) * 0.9;
+      const bg = ctx.createLinearGradient(0, 0, len, 0);
+      bg.addColorStop(0, 'rgba(0,229,255,.38)');
+      bg.addColorStop(1, 'rgba(0,229,255,0)');
+      ctx.fillStyle = bg;
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(len, -len * 0.05); ctx.lineTo(len, len * 0.05); ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    const GRID_N = 14;
+    const CYCLE_EVERY = 45;   // секунд между проездами
+    const CYCLE_FIRST = 4;    // секунд до первого проезда
+
+    // два светоцикла далеко у горизонта: едут навстречу друг другу по линиям сетки
+    function spawn() {
+      const dur = 9;                       // время пересечения экрана
+      const span = w + 400;
+      streaks.push(
+        { k: 3, dir: 1,  x: -200,    v: span / dur, color: '0,229,255' },
+        { k: 4, dir: -1, x: w + 200, v: span / dur * 0.9, color: '255,122,26' }
+      );
+    }
+
+    const pt = (lane, u) => [cx + lane * gap * u, hy + (h - hy) * u];
+
+    let last = 0, spawnT = CYCLE_FIRST;
+    function frame(t) {
+      const dt = Math.min((t - last) / 1000 || 0, 0.05);
+      last = t;
+      if (!still) {
+        spawnT -= dt;
+        if (spawnT <= 0) { spawn(); spawnT = CYCLE_EVERY; }
+      }
+
+      ctx.fillStyle = '#0a0a0a';
+      ctx.fillRect(0, 0, w, h);
+
+      // свечение горизонта
+      const g = ctx.createLinearGradient(0, hy - h * 0.25, 0, hy + h * 0.2);
+      g.addColorStop(0, 'rgba(0,229,255,0)');
+      g.addColorStop(0.55, 'rgba(0,229,255,.22)');
+      g.addColorStop(1, 'rgba(0,229,255,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, hy - h * 0.25, w, h * 0.45);
+
+      drawCity(t / 1000);
+
+      ctx.lineCap = 'round';
+
+      // продольные линии
+      ctx.lineWidth = 1;
+      for (let i = -LANES - 6; i <= LANES + 6; i++) {
+        const [x, y] = pt(i, 1);
+        const lg = ctx.createLinearGradient(cx, hy, x, y);
+        lg.addColorStop(0, 'rgba(0,229,255,0)');
+        lg.addColorStop(1, 'rgba(0,229,255,.5)');
+        ctx.strokeStyle = lg;
+        ctx.beginPath(); ctx.moveTo(cx, hy); ctx.lineTo(x, y); ctx.stroke();
+      }
+
+      // поперечные линии (неподвижные)
+      const N = GRID_N;
+      for (let k = 1; k <= N; k++) {
+        const z = k / N;
+        const u = z * z;
+        const y = hy + (h - hy) * u;
+        ctx.strokeStyle = `rgba(0,229,255,${0.08 + 0.5 * u})`;
+        ctx.lineWidth = 1 + u;
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      }
+
+      // линия горизонта
+      ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 14;
+      ctx.strokeStyle = 'rgba(160,250,255,.9)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(0, hy); ctx.lineTo(w, hy); ctx.stroke();
+
+      // далёкие светоциклы
+      for (let i = streaks.length - 1; i >= 0; i--) {
+        const s = streaks[i];
+        s.x += s.dir * s.v * dt;
+        if (s.dir > 0 ? s.x - 320 > w : s.x + 320 < 0) { streaks.splice(i, 1); continue; }
+        const u = (s.k / GRID_N) ** 2;
+        const y = hy + (h - hy) * u;
+        const trail = Math.min(w * 0.3, 320);
+        const tx = s.x - s.dir * trail;
+        const sg = ctx.createLinearGradient(tx, y, s.x, y);
+        sg.addColorStop(0, `rgba(${s.color},0)`);
+        sg.addColorStop(1, `rgba(${s.color},.95)`);
+        ctx.shadowColor = `rgb(${s.color})`; ctx.shadowBlur = 12;
+        ctx.strokeStyle = sg;
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(tx, y); ctx.lineTo(s.x, y); ctx.stroke();
+        // сам байк — яркая точка с белым ядром
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.ellipse(s.x, y - 1.5, 5, 2.5, 0, 0, 6.283); ctx.fill();
+      }
+      ctx.shadowBlur = 0;
+
+      if (!still) requestAnimationFrame(frame);
+    }
+
+    addEventListener('resize', resize);
+    resize();
+    if (!still) requestAnimationFrame(frame);
+  })();
+
+  /* ---------- кнопки ---------- */
+  const toast = document.getElementById('toast');
+  let timer;
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(timer);
+    timer = setTimeout(() => toast.classList.remove('show'), 2200);
+  }
+
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (e) {
+      const t = document.createElement('textarea');
+      t.value = text;
+      t.style.position = 'fixed';
+      t.style.opacity = '0';
+      document.body.appendChild(t);
+      t.select();
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch (_) {}
+      t.remove();
+      return ok;
+    }
+  }
+
+  document.getElementById('copyBtn').addEventListener('click', async () => {
+    showToast(await copyText('@ShacmanKrasnodar') ? 'Ник скопирован' : 'Не удалось скопировать');
+  });
+
+  document.getElementById('shareBtn').addEventListener('click', async () => {
+    const data = { title: 'Голенко Андрей', text: 'AI-автоматизация бизнеса', url: 'https://t.me/ShacmanKrasnodar' };
+    if (navigator.share) {
+      try { await navigator.share(data); } catch (_) {}
+    } else {
+      showToast(await copyText(data.url) ? 'Ссылка скопирована' : 'Не удалось скопировать');
+    }
+  });
+</script>
+</body>
+</html>
